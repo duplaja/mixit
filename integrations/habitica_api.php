@@ -377,6 +377,77 @@ function mixit_habitica_fitbit_daily_completion_check() {
 }
 
 
+/********************************************************
+ *  Function to check for completion of Fitbit Todo Goals
+ *  Deletes entry once complete
+ */
+function mixit_habitica_fitbit_todo_completion_check() {
+    $form_id = 5; //Habitica Integration ID
+    $search_criteria = array(
+        'status'        => 'active',
+        'field_filters' => array(
+            array(
+                'key'   => '8',
+                'value' => 'fitbit'
+            ),
+            array(
+                'key'   => '3',
+                'value' => 'todo'
+            )
+        )
+    );
+    $total_count = 0;    
+    $paging = array( 'offset' => 0, 'page_size' => 400 );
+    $entries = GFAPI::get_entries( $form_id ,$search_criteria,array(),$paging,$total_count);
+    
+    if ($total_count >= 250) {
+        error_log("Approaching a limit: Optimize since we have ".$total_count);
+    }
+    
+    foreach($entries as $entry) {
+
+        $to_check = rgar($entry,9);
+        $type_comp = rgar($entry,10);
+        $num_to_check = rgar($entry,11);
+        $user_id = rgar( $entry, 'created_by' );
+        $entry_id = rgar($entry,'id');
+        $task_id = rgar($entry,12);
+
+        switch ($to_check) {
+            case 'weight':
+                $check_meta = get_user_meta($user_id, '_fitbit_weight_today', true);
+                break;
+            case 'lifetime-distance':
+                $check_meta = get_user_meta($user_id, '_fitbit_distance_today', true);
+                break;
+            default:
+                continue;
+        }
+
+        if ($type_comp == 'more' && $check_meta > $num_to_check) {
+
+
+            if(mixit_habitica_vote_task($user_id,$task_id,'up')) {
+                //Mark task out of rotation til tomorrow
+                $result = GFAPI::delete_entry( $entry_id );
+            }
+
+        } 
+        elseif ($type_comp == 'less' && $check_meta < $num_to_check) {
+
+            if(mixit_habitica_vote_task($user_id,$task_id,'up')) {
+                //Mark task out of rotation til tomorrow        
+                $result = GFAPI::delete_entry( $entry_id );
+
+            }
+
+        }
+
+    }
+
+}
+
+
 /********************************************************************
  *  Function to reset all "previously marked" dailies to available again. 
  *  Happens before 2am local time to the user
