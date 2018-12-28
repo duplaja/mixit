@@ -15,7 +15,9 @@ $stored_fitbit_user_meta= array(
     '_fitbit_weight_today',
     '_fitbit_measurements',
     '_fitbit_calories_out_today',
-    '_fitbit_calories_in_today'
+    '_fitbit_calories_in_today',
+    '_fitbit_steps_lifetime',
+    '_fitbit_distance_lifetime',
 );
 
 function mixit_fitbit_return_units($unit,$type) {
@@ -111,6 +113,26 @@ function mixit_fibit_display_individual_user() {
 
     $to_return .='</table>';
 
+    if(in_array('activity',$scope_array)) {
+        $to_return.='<h3>Lifetime Fitbit Data</h3><table>';
+
+        $stored_fitbit_meta_lifetime = array('_fitbit_steps_lifetime','_fitbit_distance_lifetime');
+        foreach ($stored_fitbit_meta_lifetime as $meta_key) {
+            $value = get_user_meta($user_id,$meta_key,true);
+            $title = str_replace('_fitbit_','',$meta_key);
+            $title = str_replace('_today','',$title);
+            $title = ucwords(str_replace('_',' ',$title));
+
+            $to_return.="<tr><td>$title</td><td>$value";
+            if ($title =='Distance Lifetime') {
+                $to_return .= ' '.mixit_fitbit_return_units($measurements,'distance');
+            }
+            $to_return.="</td></tr>";
+            
+        }
+        $to_return .= '</table>';
+    }
+
     return $to_return;
     
 } 
@@ -134,7 +156,7 @@ function mixit_fitbit_update_user_data_type($user_id, $type) {
             '_fitbit_steps_today'=>'https://api.fitbit.com/1/user/-/activities/steps/date/today/1d.json',
             '_fitbit_distance_today'=>'https://api.fitbit.com/1/user/-/activities/distance/date/today/1d.json',
             '_fitbit_calories_out_today'=>'https://api.fitbit.com/1/user/-/activities/calories/date/today/1d.json',
-
+            'fitbit_lifetime'=>'https://api.fitbit.com/1/user/-/activities.json'
         );
 
     } 
@@ -194,10 +216,20 @@ function mixit_fitbit_update_user_data_type($user_id, $type) {
             elseif ($key == '_fitbit_weight_today') {
                 $meta_val = $body->{'body-weight'}[0]->value;
             }
+            elseif ($key == 'fitbit_lifetime') {
+                $lifetime_steps = $body->lifetime->total->steps;
+                $lifetime_distance = $body->lifetime->total->distance;
+
+                //var_dump();
+
+                update_user_meta( $user_id, '_fitbit_steps_lifetime', $lifetime_steps);
+                update_user_meta( $user_id, '_fitbit_distance_lifetime', $lifetime_distance);
+
+            }
              else {
                 $meta_val = '';
             }
-            if (!empty($meta_val) || is_numeric($meta_val)) {
+            if ((!empty($meta_val) || is_numeric($meta_val)) && $key !='fitbit_lifetime') {
                     update_user_meta( $user_id, $key, $meta_val);
             }
             

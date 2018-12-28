@@ -399,7 +399,7 @@ function mixit_habitica_fitbit_todo_completion_check() {
     $total_count = 0;    
     $paging = array( 'offset' => 0, 'page_size' => 400 );
     $entries = GFAPI::get_entries( $form_id ,$search_criteria,array(),$paging,$total_count);
-    
+   
     if ($total_count >= 250) {
         error_log("Approaching a limit: Optimize since we have ".$total_count);
     }
@@ -417,8 +417,11 @@ function mixit_habitica_fitbit_todo_completion_check() {
             case 'weight':
                 $check_meta = get_user_meta($user_id, '_fitbit_weight_today', true);
                 break;
+            case 'lifetime-steps':
+                $check_meta = get_user_meta($user_id, '_fitbit_steps_lifetime', true);
+                break;
             case 'lifetime-distance':
-                $check_meta = get_user_meta($user_id, '_fitbit_distance_today', true);
+                $check_meta = get_user_meta($user_id, '_fitbit_distance_lifetime', true);
                 break;
             default:
                 continue;
@@ -428,7 +431,7 @@ function mixit_habitica_fitbit_todo_completion_check() {
 
 
             if(mixit_habitica_vote_task($user_id,$task_id,'up')) {
-                //Mark task out of rotation til tomorrow
+                //Delete since it was one time
                 $result = GFAPI::delete_entry( $entry_id );
             }
 
@@ -436,7 +439,7 @@ function mixit_habitica_fitbit_todo_completion_check() {
         elseif ($type_comp == 'less' && $check_meta < $num_to_check) {
 
             if(mixit_habitica_vote_task($user_id,$task_id,'up')) {
-                //Mark task out of rotation til tomorrow        
+                //Delete since it was one-time
                 $result = GFAPI::delete_entry( $entry_id );
 
             }
@@ -502,7 +505,7 @@ function mixit_habitica_reset_daily_by_user($user_id) {
     $paging = array( 'offset' => 0, 'page_size' => 400 );
     $entries = GFAPI::get_entries( $form_id ,$search_criteria,array(),$paging,$total_count);
 
-    var_dump($entries);
+    //var_dump($entries);
 
     foreach ($entries as $entry) {
         $entry_id = rgar($entry,'id');
