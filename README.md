@@ -8,7 +8,7 @@
 
 Visit at [https://mixit.fit](https://mixit.fit)
 
-## To Set Up Your Own Instance
+## To Set Up Your Own Instance of this Service
 
 ### Requirements
 * WordPress 5.0+
