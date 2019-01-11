@@ -26,11 +26,11 @@ function mixit_habitica_display_individual_user() {
         return '<p>Habitica doesn\'t appear to be linked to your account.</p>';
     } else {
 
-        $to_return = '<h3>Habitica Data: '.$user_data['username'].'</h3><table>
-        <tr><td>Level</td><td>'.$user_data["lvl"].' ( '.$user_data["exp"].'/'.$user_data["xp_to_next"].' xp to lvl up)</td></tr>
-        <tr><td>Health</td><td>'.$user_data["hp"].' / '.$user_data["max_health"].'hp</td></tr>
-        <tr><td>MP</td><td>'.$user_data["mp"].' / '.$user_data["max_mp"].'mp</td></tr>
-        <tr><td>Gold </td><td>'.round($user_data["gp"],3).' gp</td></tr></table>';
+        $to_return = '<h3>Habitica Data</h3><table>
+        <tr><td style="width:50%">Level</td><td>'.$user_data["lvl"].' ( '.$user_data["exp"].'/'.$user_data["xp_to_next"].' xp to next)</td></tr>
+        <tr><td style="width:50%">Health</td><td>'.$user_data["hp"].' / '.$user_data["max_health"].'hp</td></tr>
+        <tr><td style="width:50%">MP</td><td>'.$user_data["mp"].' / '.$user_data["max_mp"].'mp</td></tr>
+        <tr><td style="width:50%">Gold </td><td>'.round($user_data["gp"],3).' gp</td></tr></table>';
         //mixit_habitica_create_task();
         return $to_return;
     }
@@ -142,6 +142,7 @@ function mixit_habitica_create_task($task_text,$task_type = 'daily',$difficulty 
     $headers = array(
         'x-api-user' => $habitica_id,
         'x-api-key' => $habitica_api_key,
+        "Content-Type" => "application/json",
     );
 
     $formatted_date = new DateTime("$start_date",new DateTimeZone("$user_timezone"));
@@ -161,49 +162,49 @@ function mixit_habitica_create_task($task_text,$task_type = 'daily',$difficulty 
 
             switch($repeat_raw) {
 
+
                 case 'every':
                     $repeating = true;
                     break;
                 case 'weekends':
-                    $repeating = '{"m":false,"t":false,"w":false,"th":false,"f":false}';
+                    $repeating= array("m"=>false,"t"=>false,"w"=>false,"th"=>false,"f"=>false);
                     break;
                 case 'weekdays':
-                    $repeating = '{"su":false,"s":false}';
+                    $repeating= array("su"=>false,"s"=>false);
                     break;
                 case 'mwf':
-                    $repeating = '{"su":false,"t":false,"th":false,"s":false}';
+                    $repeating= array("su"=>false,"t"=>false,"th"=>false,"s"=>false);
                     break;    
                 case 'tr':
-                    $repeating = '{"su":false,"m":false,"w":false,"f":false,"s":false}';
+                    $repeating= array("su"=>false,"m"=>false,"w"=>false,"f"=>false,"s"=>false);
                     break;
                 case 'sun':
-                    $repeating = '{"m":false,"t":false,"w":false,"th":false,"f":false,"s":false}';
+                    $repeating= array("m"=>false,"t"=>false,"w"=>false,"th"=>false,"f"=>false,"s"=>false);
                     break;                
                 case 'mon':
-                    $repeating = '{"su":false,"t":false,"w":false,"th":false,"f":false,"s":false}';
+                    $repeating= array("su"=>false,"t"=>false,"w"=>false,"th"=>false,"f"=>false,"s"=>false);
                     break;
                 case 'tues':
-                    $repeating = '{"su":false,"m":false,"w":false,"th":false,"f":false,"s":false}';
+                    $repeating= array("su"=>false,"m"=>false,"w"=>false,"th"=>false,"f"=>false,"s"=>false);
                     break;
                 case 'wed':
-                    $repeating = '{"su":false,"m":false,"t":false,"th":false,"f":false,"s":false}';
+                    $repeating= array("su"=>false,"m"=>false,"t"=>false,"th"=>false,"f"=>false,"s"=>false);
                     break;
                 case 'thurs':
-                    $repeating = '{"su":false,"m":false,"t":false,"w":false,"f":false,"s":false}';
+                    $repeating= array("su"=>false,"m"=>false,"t"=>false,"w"=>false,"f"=>false,"s"=>false);
                     break;    
                 case 'fri':
-                    $repeating = '{"su":false,"m":false,"t":false,"w":false,"th":false,"s":false}';
+                    $repeating= array("su"=>false,"m"=>false,"t"=>false,"w"=>false,"th"=>false,"s"=>false);
                     break;
                 case 'sat':
-                    $repeating = '{"su":false,"m":false,"t":false,"w":false,"th":false,"f":false,"s":true}';
+                    $repeating= array("su"=>false,"m"=>false,"t"=>false,"w"=>false,"th"=>false,"f"=>false);
                     break;
                 default:
                     $repeating = true;
             }
 
-            //var_dump($repeating);
-
             $body['repeat'] = $repeating;
+
 
         } 
         elseif ($frequency == 'daily') {
@@ -220,7 +221,9 @@ function mixit_habitica_create_task($task_text,$task_type = 'daily',$difficulty 
         }   
     }
     
-    $response = $request->post( $post_url, array('headers' =>$headers, 'body' => $body ) );
+    $response = $request->post( $post_url, array('headers' =>$headers, 'body' => json_encode($body) ) );
+
+    //echo '<pre>' . var_export($body, true) . '</pre>';
 
     $body = json_decode(wp_remote_retrieve_body($response));
     
@@ -422,6 +425,18 @@ function mixit_habitica_fitbit_todo_completion_check() {
                 break;
             case 'lifetime-distance':
                 $check_meta = get_user_meta($user_id, '_fitbit_distance_lifetime', true);
+                break;
+            case 'daily-steps':
+                $check_meta = get_user_meta($user_id, '_fitbit_steps_today', true);
+                break;
+            case 'calories-in':
+                $check_meta = get_user_meta($user_id, '_fitbit_calories_in_today', true);
+                break;
+            case 'calories-out':
+                $check_meta = get_user_meta($user_id, '_fitbit_calories_out_today', true);
+                break;
+            case 'daily-distance':
+                $check_meta = get_user_meta($user_id, '_fitbit_distance_today', true);
                 break;
             default:
                 continue;
